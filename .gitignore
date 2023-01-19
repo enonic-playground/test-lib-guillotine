@@ -39,6 +39,7 @@ gradle-app.setting
 !gradle-wrapper.jar
 
 ### VSCode ###
+/bin
 *.code-workspace
 
 ### WebStorm ###

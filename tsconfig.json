@@ -1,14 +1,47 @@
 {
-  "compilerOptions": {
-    "target": "es5",
-    "sourceMap": true,
-    "allowJs": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true
-  },
-  "exclude": [
-    "./build/*"
-  ]
+	"compilerOptions": {
+		"allowJs": true,
+		"allowSyntheticDefaultImports": true,
+		"baseUrl": "./",
+		"esModuleInterop": true,
+		"jsx": "react-jsx",
+
+		// Default:
+		//  CommonJS if target is ES3 or ES5,
+		//  ES6/ES2015 otherwise.
+		// Allowed:
+		//  none, commonjs, amd, umd, system, es6/es2015, es2020, es2022, esnext, node16, nodenext
+		// "module": "commonjs",
+
+		// Default:
+		//  Classic if module is AMD, UMD, System or ES6/ES2015
+		//  Matches if module is node12 or nodenext
+		//  Node otherwise.
+		// Allowed:
+		//  classic, node, node16, nodenext
+		"moduleResolution": "node",
+
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"outDir": "build/tsc", // So it doesn't complain about overwriting files under ./src
+		"paths": {
+			"/lib/xp/*": ["node_modules/@enonic-types/lib-*"],
+			"/lib/*": ["src/main/resources/lib/*"], // So one can import local libs with absolute path (same as Enonic does during runtime).
+		},
+		"sourceMap": true,
+		"strictNullChecks": true,
+
+		// Default: ES3
+		// Allowed: es3,es5,es6/es2015,es2016,es2017,es2018,es2019,es2020,es2021,es2022,esnext
+		// "target": "es5", // We're letting swc handle the transpilation
+		// "target": "esnext", // Turns out tree-shaking works regardless of target
+		"typeRoots": [
+			"@enonic-types",
+			"types"
+		]
+	},
+	"exclude": [
+		"./build/*"
+	]
 }

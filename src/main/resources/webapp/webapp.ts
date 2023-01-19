@@ -29,14 +29,7 @@ const getStatic = buildGetter({
 });
 const router = Router();
 
-let schema;
-run({
-	repository: REPO_ID,
-	branch: BRANCH_ID,
-	principals: ['role:system.admin']
-}, () => {
-	schema = createSchema();
-});
+let schema = createSchema();
 
 router.get(
 	'/static/{libRouterPath:.+}',
@@ -94,17 +87,24 @@ router.get('/?', (request: Enonic.Xp.Http.Request) => {
 
 
 router.post('/?', (request: Enonic.Xp.Http.Request) => {
-	log.info('post request:%s', toStr(request));
+	// log.info('post request:%s', toStr(request));
 	const {
 		query,
 		variables
 	} = JSON.parse(request.body as string);
-	log.info('query:%s', toStr(query));
-	log.info('variables:%s', toStr(variables));
+	// log.info('query:%s', toStr(query));
+	// log.info('variables:%s', toStr(variables));
 	const context = {};
+	const res = run({
+		repository: REPO_ID,
+		branch: BRANCH_ID,
+		principals: ['role:system.admin']
+	}, () => {
+		return execute(schema, query, variables, context);
+	});
 	return {
 		contentType: 'application/json',
-		body: JSON.stringify(execute(schema, query, variables, context))
+		body: JSON.stringify(res)
 	};
 });
 

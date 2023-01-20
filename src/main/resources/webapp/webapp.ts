@@ -70,7 +70,7 @@ router.get('/?', (request: Enonic.Xp.Http.Request) => {
 		<link rel="stylesheet" type="text/css" href="./static/graphiql/graphiql.min.css">
 		<title>GraphiQL</title>
 	</head>
-	<body>
+	<body style="margin:0">
 		<div id="${ID_REACT_CONTAINER}"/>
 		<script type="text/javascript" src="./static/App.esm.js"></script>
 		<script type='module' defer>

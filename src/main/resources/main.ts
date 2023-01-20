@@ -1,4 +1,9 @@
 import { toStr } from '@enonic/js-utils';
+import fde from 'fast-deep-equal';
+//@ts-ignore
+import { execute } from '/lib/graphql';
+//@ts-ignore
+import { createSchema } from '/lib/guillotine';
 import { create as createContent } from '/lib/xp/content';
 import { run } from '/lib/xp/context';
 import { create as createProject } from '/lib/xp/project';
@@ -8,6 +13,9 @@ import { executeFunction } from '/lib/xp/task';
 const PROJECT_ID = app.name.replace('com.enonic.app.', '').replace(/\./g, '-');
 const REPO_ID = `com.enonic.cms.${PROJECT_ID}`;
 const BRANCH_ID = 'master';
+
+
+const schema = createSchema();
 
 
 function task() {
@@ -65,6 +73,70 @@ function task() {
 			if (e.class.name !== 'com.enonic.xp.content.ContentAlreadyExistsException') {
 				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 			}
+		} // try/catch
+
+		try {
+			const query = `{
+	guillotine {
+		queryDsl(
+			query: {
+				matchAll: {}
+			}
+		) {
+			_path
+		}
+		queryDslConnection(
+			query: {
+				matchAll: {}
+			}
+		) {
+			totalCount
+			pageInfo {
+				startCursor
+				endCursor
+				hasNext
+			}
+			aggregationsAsJson
+			highlightAsJson
+			edges {
+				node {
+					_path
+				}
+			}
+		}
+	}
+}`
+			const variables = {};
+			const context = {};
+			const actual = execute(schema, query, variables, context);
+			// log.info('actual:%s', actual);
+			const expected = {
+				data:{
+					guillotine: {
+						queryDsl: [{
+							_path: '/folder'
+						}],
+						queryDslConnection: {
+							totalCount: 1,
+							pageInfo: {
+								startCursor: 'MA==',
+								endCursor: 'MA==',
+								hasNext: false
+							},
+							aggregationsAsJson: {},
+							highlightAsJson: {},
+							edges: [{
+								node: {
+									_path: '/folder'
+								}
+							}]
+						}
+					}
+				}
+			};
+			log.info('fde:%s', fde(expected, actual));
+		} catch (e) {
+			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 		} // try/catch
 	}); // run
 } // task

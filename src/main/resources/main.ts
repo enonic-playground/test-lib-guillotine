@@ -1,7 +1,10 @@
 import { toStr } from '@enonic/js-utils';
+// import {detailedDiff} from 'deep-object-diff';
 import fde from 'fast-deep-equal';
 //@ts-ignore
 import { execute } from '/lib/graphql';
+// import HumanDiff from 'human-object-diff';
+const Diff = require('diff');
 //@ts-ignore
 import { createSchema } from '/lib/guillotine';
 import { create as createContent } from '/lib/xp/content';
@@ -9,6 +12,9 @@ import { run } from '/lib/xp/context';
 import { create as createProject } from '/lib/xp/project';
 import { executeFunction } from '/lib/xp/task';
 
+// const { diff: detailedDiff } = new HumanDiff({
+// 	objectName: 'graph'
+// });
 
 const PROJECT_ID = app.name.replace('com.enonic.app.', '').replace(/\./g, '-');
 const REPO_ID = `com.enonic.cms.${PROJECT_ID}`;
@@ -76,18 +82,43 @@ function task() {
 		} // try/catch
 
 		try {
+			createContent({
+				contentType: 'base:folder',
+				data: {},
+				displayName: 'My Sub Folder',
+				name: 'subFolder',
+				language: 'no',
+				parentPath: '/folder',
+			});
+		} catch (e) {
+			if (e.class.name !== 'com.enonic.xp.content.ContentAlreadyExistsException') {
+				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+			}
+		} // try/catch
+
+		try {
 			const query = `{
 	guillotine {
 		queryDsl(
+			first: 1
 			query: {
 				matchAll: {}
+			}
+			sort: {
+				field: "_name"
+				direction: ASC
 			}
 		) {
 			_path
 		}
 		queryDslConnection(
+			first: 1
 			query: {
 				matchAll: {}
+			}
+			sort: {
+				field: "_name"
+				direction: ASC
 			}
 		) {
 			totalCount
@@ -104,6 +135,64 @@ function task() {
 				}
 			}
 		}
+		queryOffsetSortDesc: queryDsl(
+			offset: 1
+			query: {
+				matchAll: {}
+			}
+			sort: {
+				field: "_name"
+				direction: DESC
+			}
+		) {
+			_path
+		}
+		queryFulltext: queryDsl(
+			query: {
+				fulltext: {
+					fields: "_allText"
+					query: "folder"
+					operator: OR
+				}
+			}
+		) {
+			_path
+		}
+		queryNgram: queryDsl(
+			query: {
+				ngram: {
+					fields: "_allText"
+					query: "fol"
+					operator: OR
+				}
+			}
+		) {
+			_path
+		}
+		queryStemmedEn: queryDsl(
+			query: {
+				stemmed: {
+					fields: "_allText"
+					query: "folders"
+					operator: OR
+					language: "en"
+				}
+			}
+		) {
+			_path
+		}
+		queryStemmedNo: queryDsl(
+			query: {
+				stemmed: {
+					fields: "_allText"
+					query: "folders"
+					operator: OR
+					language: "no"
+				}
+			}
+		) {
+			_path
+		}
 	}
 }`
 			const variables = {};
@@ -117,11 +206,11 @@ function task() {
 							_path: '/folder'
 						}],
 						queryDslConnection: {
-							totalCount: 1,
+							totalCount: 2,
 							pageInfo: {
 								startCursor: 'MA==',
 								endCursor: 'MA==',
-								hasNext: false
+								hasNext: true
 							},
 							aggregationsAsJson: {},
 							highlightAsJson: {},
@@ -130,11 +219,35 @@ function task() {
 									_path: '/folder'
 								}
 							}]
-						}
+						},
+						queryOffsetSortDesc: [{
+							_path: '/folder'
+						}],
+						queryFulltext: [{
+							_path: '/folder'
+						},{
+							_path: '/folder/subFolder'
+						}],
+						queryNgram: [{
+							_path: '/folder'
+						},{
+							_path: '/folder/subFolder'
+						}],
+						queryStemmedEn: [{
+							_path: '/folder'
+						}],
+						queryStemmedNo: [{
+							_path: '/folder/subFolder'
+						}]
 					}
 				}
 			};
-			log.info('fde:%s', fde(expected, actual));
+			const boolEqual = fde(expected, actual);
+			log.info('boolEqual:%s', boolEqual);
+			if (!boolEqual) {
+				// log.info('diff:%s', toStr(detailedDiff(expected, actual)));
+				log.info('diff:%s', toStr(Diff.diffJson(expected, actual)));
+			}
 		} catch (e) {
 			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 		} // try/catch

@@ -29,7 +29,7 @@ const getStatic = buildGetter({
 });
 const router = Router();
 
-let schema = createSchema();
+const schema = createSchema();
 
 router.get(
 	'/static/{libRouterPath:.+}',

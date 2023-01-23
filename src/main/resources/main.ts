@@ -107,6 +107,8 @@ function task() {
 			}
 		} // try/catch
 
+		const variables = {};
+		const context = {};
 		try {
 			const query = `{
 	guillotine {
@@ -206,12 +208,21 @@ function task() {
 		}
 		highlightStemmed: queryDslConnection(
 			highlight: {
+				encoder: default
+				fragmenter: span # span is default
+				fragmentSize: 100 # 100 is default
+				noMatchSize: 0 # 0 is default
+				numberOfFragments: 5 # 5 is default
+				order: none # none is default
+				postTag: "</em>" # "</em>" is default
+				preTag: "<em>" # "<em>" is default
 				properties: [
 					{propertyName: "_alltext"},
 					{propertyName: "_path"},
 					{propertyName: "displayName"}
 				],
 				requireFieldMatch: false
+				# tagsSchema: styled
 			}
 			query: {
 			boolean: {
@@ -246,8 +257,6 @@ function task() {
 		}
 	}
 }`
-			const variables = {};
-			const context = {};
 			const actual = execute(schema, query, variables, context);
 			// log.info('actual:%s', actual);
 			const expected = {
@@ -375,6 +384,116 @@ function task() {
 		} catch (e) {
 			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 		} // try/catch
+
+		try {
+			const query = `{
+	guillotine {
+		highlightStemmedOpposite: queryDslConnection(
+			highlight: {
+				encoder: html
+				fragmenter: simple # span is default
+				fragmentSize: 1 # 100 is default
+				noMatchSize: 100 # 0 is default
+				numberOfFragments: 1 # 5 is default, 0 means infinite?
+				order: score # none is default
+				postTag: "</b>" # "</em>" is default
+				preTag: "<b>" # "<em>" is default
+				properties: [
+					{propertyName: "_alltext"},
+					{propertyName: "_path"},
+					{propertyName: "_state"},
+					{propertyName: "displayName"}
+				],
+				requireFieldMatch: false
+				tagsSchema: styled
+			}
+			query: {
+			boolean: {
+				should: [
+						{fulltext: {fields: ["_allText", "displayName"], query: "folder", operator: OR}},
+						{stemmed: {fields: ["_allText", "displayName"], query: "folder", operator: OR, language: "en"}},
+						{stemmed: {fields: ["_allText", "displayName"], query: "folder", operator: OR, language: "no"}}
+					]
+				}
+			}
+		) {
+			highlightAsJson
+			edges {
+				node {
+					_path
+					language
+				}
+			}
+		}
+	}
+}`
+			const actual = execute(schema, query, variables, context);
+			// log.info('actual:%s', actual);
+			const expected = {
+				data:{
+					guillotine: {
+						highlightStemmedOpposite: {
+							highlightAsJson: {
+								[folderId]: {
+									_alltext: [
+										'<b>folder</b>'
+									],
+									_path: [
+										'<b>&#x2F;content&#x2F;folder</b>'
+									],
+									_state: [
+										'default'
+									],
+									'_alltext._stemmed_en': [
+										'<b>folder</b>'
+									],
+									displayname: [
+										' <b>Folder</b>'
+									]
+								},
+								[subFolderId]: {
+									_alltext: [
+										' <b>Folder</b>'
+									],
+									_path: [
+										'<b>&#x2F;content&#x2F;folder&#x2F;subFolder</b>'
+									],
+									_state: [
+										'default'
+									],
+									'_alltext._stemmed_no': [
+										' <b>Folder</b>'
+									],
+									displayname: [
+										' <b>Folder</b>'
+									]
+								}
+							},
+							edges: [{
+								node: {
+									_path: '/folder',
+									language: 'en'
+								}
+							},{
+								node: {
+									_path: '/folder/subFolder',
+									language: 'no'
+								}
+							}]
+						},
+					}
+				}
+			};
+			const boolEqual = fde(expected, actual);
+			log.info('boolEqual:%s', boolEqual);
+			if (!boolEqual) {
+				// log.info('diff:%s', toStr(detailedDiff(expected, actual)));
+				log.info('diff:%s', toStr(Diff.diffJson(expected, actual)));
+			}
+		} catch (e) {
+			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+		} // try/catch
+
 	}); // run
 } // task
 

@@ -823,6 +823,62 @@ function task() {
 			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 		} // try/catch
 
+		try {
+			const query = `{
+	guillotine {
+		priceRange: queryDsl(
+			query: {
+				range: {
+					field: "data.price"
+					gt: {
+						double: -0.2
+					}
+					lt: {
+						double: 1.1
+					}
+					boost: -1.1
+				}
+			}
+		) {
+			_path
+			dataAsJson
+		}
+	}
+}`
+			const expected = {
+				data:{
+					guillotine: {
+						priceRange: [{
+							_path: '/folder',
+							dataAsJson: {
+								location: '59.91273,10.74609',
+								price: 1
+							}
+						},{
+							_path: '/folder/subFolder',
+							dataAsJson: {
+								location: '60.39299,5.32415',
+								price: -0.1
+							}
+						}],
+					} // guillotine
+				} // data
+			};
+			const actual = execute(gqlSchema, query, variables, context);
+			const boolEqual = fde(
+				JSON.parse(JSON.stringify(expected)),
+				JSON.parse(JSON.stringify(actual)),
+			);
+			log.info('range query:%s', boolEqual);
+			if (!boolEqual) {
+				log.info('actual:%s', toStr(actual));
+				// log.info('diff:%s', toStr(detailedDiff(expected, actual)));
+				log.info('diff:%s', toStr(Diff.diffJson(expected, actual)));
+			}
+		} catch (e) {
+			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+		} // try/catch
+
 	}); // run
 } // task
 

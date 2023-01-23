@@ -26,6 +26,7 @@
     "@enonic-types/lib-node": "^7.11.3",
     "@enonic-types/lib-project": "^7.11.3",
     "@enonic-types/lib-repo": "^7.11.3",
+    "@enonic-types/lib-schema": "^7.11.3",
     "@enonic-types/lib-task": "^7.11.3",
     "@enonic/js-utils": "^0.44.1",
     "@types/human-object-diff": "^2.0.2",

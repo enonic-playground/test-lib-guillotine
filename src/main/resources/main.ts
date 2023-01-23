@@ -6,13 +6,17 @@ import { execute } from '/lib/graphql';
 // import HumanDiff from 'human-object-diff';
 const Diff = require('diff');
 //@ts-ignore
-import { createSchema } from '/lib/guillotine';
+import { createSchema as createGqlSchema} from '/lib/guillotine';
 import { create as createContent } from '/lib/xp/content';
 import { run } from '/lib/xp/context';
 import {
 	create as createProject,
 	delete as deleteProject
 } from '/lib/xp/project';
+import {
+	createSchema,
+	listSchemas,
+} from '/lib/xp/schema';
 import { executeFunction } from '/lib/xp/task';
 
 // const { diff: detailedDiff } = new HumanDiff({
@@ -24,7 +28,7 @@ const REPO_ID = `com.enonic.cms.${PROJECT_ID}`;
 const BRANCH_ID = 'draft';
 
 
-const schema = createSchema();
+const gqlSchema = createGqlSchema();
 
 
 function task() {
@@ -36,6 +40,31 @@ function task() {
 			'role:system.admin',
 		]
 	}, () => {
+		const createdSchema = createSchema({
+			name: `${app.name}:test`,
+			type: 'CONTENT_TYPE',
+			resource: `<content-type>
+	<description>Test description</description>
+	<display-name>Test displayName</display-name>
+	<super-type>base:structured</super-type>
+	<is-abstract>false</is-abstract>
+	<is-final>true</is-final>
+	<is-built-in>false</is-built-in>
+	<allow-child-content>true</allow-child-content>
+	<form>
+		<input name="price" type="Double">
+			<label>Price</label>
+			<occurrences minimum="0" maximum="1"/>
+		</input>
+	</form>
+</content-type>`,
+		});
+		log.info('createdSchema:%s', createdSchema);
+		const schemas = listSchemas({
+			application: app.name,
+			type: 'CONTENT_TYPE'
+		});
+		log.info('schemas:%s', schemas);
 		try {
 			deleteProject({
 				id: PROJECT_ID,
@@ -68,9 +97,9 @@ function task() {
 		try {
 			folderId = createContent({
 				//childOrder: '',
-				contentType: 'base:folder',
-				data: { // e.class.name:"java.lang.NullPointerException" e.message:"data cannot be null"
-					// propertyName: 'propertyValue' //  e.class.name:"java.lang.IllegalArgumentException" e.message:"No mapping defined for property propertyName with value propertyValue"
+				contentType: 'base:unstructured', // So we can have any data
+				data: {
+					price: 1
 				},
 				displayName: 'My Folder',
 				name: 'folder',
@@ -94,8 +123,10 @@ function task() {
 		let subFolderId: string;
 		try {
 			subFolderId = createContent({
-				contentType: 'base:folder',
-				data: {},
+				contentType: 'base:unstructured', // So we can have any data
+				data: {
+					price: -0.1
+				},
 				displayName: 'My Sub Folder',
 				name: 'subFolder',
 				language: 'no',
@@ -257,7 +288,7 @@ function task() {
 		}
 	}
 }`
-			const actual = execute(schema, query, variables, context);
+			const actual = execute(gqlSchema, query, variables, context);
 			// log.info('actual:%s', actual);
 			const expected = {
 				data:{
@@ -357,7 +388,7 @@ function task() {
 								},
 								type: {
 									buckets: [{
-										key: 'base:folder',
+										key: 'base:unstructured',
 										docCount: 2,
 										typeLanguage: {
 											buckets: [{
@@ -427,7 +458,7 @@ function task() {
 		}
 	}
 }`
-			const actual = execute(schema, query, variables, context);
+			const actual = execute(gqlSchema, query, variables, context);
 			// log.info('actual:%s', actual);
 			const expected = {
 				data:{

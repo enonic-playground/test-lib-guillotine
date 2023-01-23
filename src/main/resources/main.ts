@@ -9,7 +9,7 @@ const Diff = require('diff');
 import { createSchema as createGqlSchema} from '/lib/guillotine';
 import {
 	createVirtualApplication,
-	get as getApp,
+	// get as getApp,
 	getApplicationMode,
 	// list as listApps
 } from '/lib/xp/app';
@@ -30,9 +30,11 @@ import { executeFunction } from '/lib/xp/task';
 // });
 
 const PROJECT_ID = app.name.replace('com.enonic.app.', '').replace(/\./g, '-');
-const REPO_ID = `com.enonic.cms.${PROJECT_ID}`;
+const REPO_ID = `com.enonic.cms.${PROJECT_ID}` as const;
 const BRANCH_ID = 'draft';
-const APP_KEY_VIRTUAL = `${app.name}.virtual`;
+const APP_KEY_VIRTUAL = `${app.name}.virtual` as const;
+const CONTENT_TYPE = `${APP_KEY_VIRTUAL}:test` as const;
+
 
 const gqlSchema = createGqlSchema();
 
@@ -46,46 +48,59 @@ function task() {
 			'role:system.admin',
 		]
 	}, () => {
-		const vApp = createVirtualApplication({
-			key: APP_KEY_VIRTUAL
-		});
-		log.info('vApp:%s', toStr(vApp));
+		try {
+			const vApp = createVirtualApplication({
+				key: APP_KEY_VIRTUAL
+			});
+			log.info('vApp:%s', toStr(vApp));
+		} catch (e) {
+			if (e.class.name !== 'com.enonic.xp.node.NodeAlreadyExistAtPathException') {
+				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+			}
+		} // try/catch
 
 		const applicationMode = getApplicationMode({
 			key: APP_KEY_VIRTUAL
 		});
-		log.info('applicationMode:%s', applicationMode); // bundled
+		log.info('applicationMode:%s', applicationMode); // virtual | bundled | augmented
 
-		const appInfo = getApp({
-			key: APP_KEY_VIRTUAL
-		});
-		log.info('appInfo:%s', toStr(appInfo)); // Doesn't contain applicationMode
+		// const appInfo = getApp({
+		// 	key: APP_KEY_VIRTUAL
+		// });
+		// log.info('appInfo:%s', toStr(appInfo)); // Doesn't contain applicationMode
 
 		// const apps = listApps();
 		// log.info('apps:%s', toStr(apps)); // long list
 
-		const createdSchema = createSchema({
-			name: `${APP_KEY_VIRTUAL}:test`,
-			type: 'CONTENT_TYPE',
-			resource: `<content-type>
-	<description>Test description</description>
-	<display-name>Test displayName</display-name>
-	<super-type>base:structured</super-type>
-	<is-abstract>false</is-abstract>
-	<is-final>true</is-final>
-	<is-built-in>false</is-built-in>
-	<allow-child-content>true</allow-child-content>
-	<form>
-		<input name="price" type="Double">
-			<label>Price</label>
-			<occurrences minimum="0" maximum="1"/>
-		</input>
-	</form>
-</content-type>`,
-		});
-		log.info('createdSchema:%s', createdSchema);
+		try {
+			const createdSchema = createSchema({
+				name: CONTENT_TYPE,
+				type: 'CONTENT_TYPE',
+				resource: `<content-type>
+		<description>Test description</description>
+		<display-name>Test displayName</display-name>
+		<super-type>base:structured</super-type>
+		<is-abstract>false</is-abstract>
+		<is-final>true</is-final>
+		<is-built-in>false</is-built-in>
+		<allow-child-content>true</allow-child-content>
+		<form>
+			<input name="price" type="Double">
+				<label>Price</label>
+				<occurrences minimum="0" maximum="1"/>
+			</input>
+		</form>
+	</content-type>`,
+			});
+			log.info('createdSchema:%s', createdSchema);
+		} catch (e) {
+			if (e.class.name !== 'com.enonic.xp.node.NodeAlreadyExistAtPathException') {
+				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+			}
+		} // try/catch
+
 		const schemas = listSchemas({
-			application: app.name,
+			application: APP_KEY_VIRTUAL,
 			type: 'CONTENT_TYPE'
 		});
 		log.info('schemas:%s', schemas);
@@ -121,7 +136,7 @@ function task() {
 		try {
 			folderId = createContent({
 				//childOrder: '',
-				contentType: 'base:unstructured', // So we can have any data
+				contentType: CONTENT_TYPE,
 				data: {
 					price: 1
 				},
@@ -147,7 +162,7 @@ function task() {
 		let subFolderId: string;
 		try {
 			subFolderId = createContent({
-				contentType: 'base:unstructured', // So we can have any data
+				contentType: CONTENT_TYPE,
 				data: {
 					price: -0.1
 				},
@@ -412,7 +427,7 @@ function task() {
 								},
 								type: {
 									buckets: [{
-										key: 'base:unstructured',
+										key: CONTENT_TYPE,
 										docCount: 2,
 										typeLanguage: {
 											buckets: [{

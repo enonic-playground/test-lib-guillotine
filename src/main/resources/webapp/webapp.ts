@@ -20,7 +20,7 @@ type AssetRequest = Enonic.Xp.Http.Request<string,{},{},{},{
 
 const PROJECT_ID = app.name.replace('com.enonic.app.', '').replace(/\./g, '-');
 const REPO_ID = `com.enonic.cms.${PROJECT_ID}`;
-const BRANCH_ID = 'master';
+const BRANCH_ID = 'draft';
 const ID_REACT_CONTAINER = 'react-container';
 
 const getStatic = buildGetter({

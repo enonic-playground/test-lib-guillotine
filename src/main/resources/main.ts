@@ -9,7 +9,10 @@ const Diff = require('diff');
 import { createSchema } from '/lib/guillotine';
 import { create as createContent } from '/lib/xp/content';
 import { run } from '/lib/xp/context';
-import { create as createProject } from '/lib/xp/project';
+import {
+	create as createProject,
+	delete as deleteProject
+} from '/lib/xp/project';
 import { executeFunction } from '/lib/xp/task';
 
 // const { diff: detailedDiff } = new HumanDiff({
@@ -18,7 +21,7 @@ import { executeFunction } from '/lib/xp/task';
 
 const PROJECT_ID = app.name.replace('com.enonic.app.', '').replace(/\./g, '-');
 const REPO_ID = `com.enonic.cms.${PROJECT_ID}`;
-const BRANCH_ID = 'master';
+const BRANCH_ID = 'draft';
 
 
 const schema = createSchema();
@@ -33,6 +36,13 @@ function task() {
 			'role:system.admin',
 		]
 	}, () => {
+		try {
+			deleteProject({
+				id: PROJECT_ID,
+			});
+		} catch (e) {
+				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+		} // try/catch
 		try {
 			createProject({
 				displayName: 'Test Lib Guillotine',
@@ -54,9 +64,9 @@ function task() {
 		branch: BRANCH_ID,
 		principals: ['role:system.admin']
 	}, () => {
-
+		let folderId: string;
 		try {
-			createContent({
+			folderId = createContent({
 				//childOrder: '',
 				contentType: 'base:folder',
 				data: { // e.class.name:"java.lang.NullPointerException" e.message:"data cannot be null"
@@ -74,22 +84,23 @@ function task() {
 				// 		xPropertyName: 'xPropertyValue'
 				// 	}
 				// }
-			});
+			})._id;
 		} catch (e) {
 			if (e.class.name !== 'com.enonic.xp.content.ContentAlreadyExistsException') {
 				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 			}
 		} // try/catch
 
+		let subFolderId: string;
 		try {
-			createContent({
+			subFolderId = createContent({
 				contentType: 'base:folder',
 				data: {},
 				displayName: 'My Sub Folder',
 				name: 'subFolder',
 				language: 'no',
 				parentPath: '/folder',
-			});
+			})._id;
 		} catch (e) {
 			if (e.class.name !== 'com.enonic.xp.content.ContentAlreadyExistsException') {
 				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
@@ -193,6 +204,33 @@ function task() {
 		) {
 			_path
 		}
+		highlightStemmed: queryDslConnection(
+			highlight: {
+				properties: [
+					{propertyName: "_alltext"},
+					{propertyName: "_path"},
+					{propertyName: "displayName"}
+				],
+				requireFieldMatch: false
+			}
+			query: {
+			boolean: {
+				should: [
+						{fulltext: {fields: ["_allText", "displayName"], query: "folder", operator: OR}},
+						{stemmed: {fields: ["_allText", "displayName"], query: "folder", operator: OR, language: "en"}},
+						{stemmed: {fields: ["_allText", "displayName"], query: "folder", operator: OR, language: "no"}}
+					]
+				}
+			}
+		) {
+			highlightAsJson
+			edges {
+				node {
+					_path
+					language
+				}
+			}
+		}
 	}
 }`
 			const variables = {};
@@ -238,7 +276,52 @@ function task() {
 						}],
 						queryStemmedNo: [{
 							_path: '/folder/subFolder'
-						}]
+						}],
+						highlightStemmed: {
+							highlightAsJson: {
+								[folderId]: {
+									_alltext: [
+										'<em>folder</em>',
+										'My <em>Folder</em>'
+									],
+									_path: [
+										'<em>/content/folder</em>'
+									],
+									'_alltext._stemmed_en': [
+										'<em>folder</em>',
+										'My <em>Folder</em>'
+									],
+									displayname: [
+										'My <em>Folder</em>'
+									]
+								},
+								[subFolderId]: {
+									_alltext: [
+										'My Sub <em>Folder</em>'
+									],
+									_path: [
+										'<em>/content/folder/subFolder</em>'
+									],
+									'_alltext._stemmed_no': [
+										'My Sub <em>Folder</em>'
+									],
+									displayname: [
+										'My Sub <em>Folder</em>'
+									]
+								}
+							},
+							edges: [{
+								node: {
+									_path: '/folder',
+									language: 'en'
+								}
+							},{
+								node: {
+									_path: '/folder/subFolder',
+									language: 'no'
+								}
+							}]
+						}
 					}
 				}
 			};

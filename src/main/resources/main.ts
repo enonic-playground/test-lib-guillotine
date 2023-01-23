@@ -231,6 +231,19 @@ function task() {
 				}
 			}
 		}
+		agg: queryDslConnection(
+			aggregations: [
+				{name: "language", terms: {field: "language"}},
+				{
+					name: "type",
+					subAggregations: {name: "typeLanguage", terms: {field: "language"}}
+					terms: {field: "type"}
+				}
+			]
+			query: {fulltext: {fields: ["_allText", "displayName"], query: "folder", operator: OR}}
+		) {
+			aggregationsAsJson
+		}
 	}
 }`
 			const variables = {};
@@ -321,6 +334,34 @@ function task() {
 									language: 'no'
 								}
 							}]
+						},
+						agg: {
+							aggregationsAsJson: {
+								language: {
+									buckets: [{
+										key: 'en',
+										docCount: 1
+									},{
+										key: 'no',
+										docCount: 1
+									}]
+								},
+								type: {
+									buckets: [{
+										key: 'base:folder',
+										docCount: 2,
+										typeLanguage: {
+											buckets: [{
+												key: 'en',
+												docCount: 1
+											},{
+												key: 'no',
+												docCount: 1
+											}]
+										}
+									}]
+								}
+							}
 						}
 					}
 				}

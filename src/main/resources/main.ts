@@ -193,7 +193,9 @@ function task() {
 		queryDsl(
 			first: 1
 			query: {
-				matchAll: {}
+				matchAll: {
+					boost: 1
+				}
 			}
 			sort: {
 				field: "_name"
@@ -205,7 +207,9 @@ function task() {
 		queryDslConnection(
 			first: 1
 			query: {
-				matchAll: {}
+				matchAll: {
+					boost: 1
+				}
 			}
 			sort: {
 				field: "_name"
@@ -748,6 +752,68 @@ function task() {
 				JSON.parse(JSON.stringify(actual)),
 			);
 			log.info('aggregations:%s', boolEqual);
+			if (!boolEqual) {
+				log.info('actual:%s', toStr(actual));
+				// log.info('diff:%s', toStr(detailedDiff(expected, actual)));
+				log.info('diff:%s', toStr(Diff.diffJson(expected, actual)));
+			}
+		} catch (e) {
+			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+		} // try/catch
+
+		try {
+			const query = `{
+	guillotine {
+		minimumMatch0: queryDsl(
+			query: {pathMatch: {field: "_path", path: "/content/folder/subFolder", minimumMatch: 0, boost: 1.1}}
+		) {
+			_path
+		}
+		minimumMatch1: queryDsl(
+			query: {pathMatch: {field: "_path", path: "/content/folder/subFolder", minimumMatch: 1, boost: 1.1}}
+		) {
+			_path
+		}
+		minimumMatch2: queryDsl(
+			query: {pathMatch: {field: "_path", path: "/content/folder/subFolder", minimumMatch: 2, boost: 1.1}}
+		) {
+			_path
+		}
+		minimumMatch3: queryDsl(
+			query: {pathMatch: {field: "_path", path: "/content/folder/subFolder", minimumMatch: 3, boost: 1.1}}
+		) {
+			_path
+		}
+	}
+}`
+			const expected = {
+				data:{
+					guillotine: {
+						minimumMatch0: [{
+							_path: '/folder/subFolder',
+						},{
+							_path: '/folder',
+						}],
+						minimumMatch1: [{
+							_path: '/folder/subFolder',
+						},{
+							_path: '/folder',
+						}],
+						minimumMatch2: [{
+							_path: '/folder/subFolder',
+						},{
+							_path: '/folder',
+						}],
+						minimumMatch3: []
+					} // guillotine
+				} // data
+			};
+			const actual = execute(gqlSchema, query, variables, context);
+			const boolEqual = fde(
+				JSON.parse(JSON.stringify(expected)),
+				JSON.parse(JSON.stringify(actual)),
+			);
+			log.info('patchMatch:%s', boolEqual);
 			if (!boolEqual) {
 				log.info('actual:%s', toStr(actual));
 				// log.info('diff:%s', toStr(detailedDiff(expected, actual)));

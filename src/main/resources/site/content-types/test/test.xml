@@ -1,0 +1,19 @@
+<content-type>
+	<description>Test description</description>
+	<display-name>Test displayName</display-name>
+	<super-type>base:structured</super-type>
+	<is-abstract>false</is-abstract>
+	<is-final>true</is-final>
+	<is-built-in>false</is-built-in>
+	<allow-child-content>true</allow-child-content>
+	<form>
+		<input name="location" type="GeoPoint">
+			<label>Location</label>
+			<occurrences minimum="1" maximum="1"/>
+		</input>
+		<input name="price" type="Double">
+			<label>Price</label>
+			<occurrences minimum="1" maximum="1"/>
+		</input>
+	</form>
+</content-type>

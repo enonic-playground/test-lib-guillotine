@@ -21,6 +21,7 @@
     "@babel/preset-react": "^7",
     "@babel/register": "^7.17.7",
     "@enonic-types/global": "^7.11.3",
+    "@enonic-types/lib-app": "^7.11.3",
     "@enonic-types/lib-content": "^7.11.3",
     "@enonic-types/lib-context": "^7.11.3",
     "@enonic-types/lib-node": "^7.11.3",

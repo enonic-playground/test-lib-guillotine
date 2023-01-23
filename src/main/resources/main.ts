@@ -7,6 +7,12 @@ import { execute } from '/lib/graphql';
 const Diff = require('diff');
 //@ts-ignore
 import { createSchema as createGqlSchema} from '/lib/guillotine';
+import {
+	createVirtualApplication,
+	get as getApp,
+	getApplicationMode,
+	// list as listApps
+} from '/lib/xp/app';
 import { create as createContent } from '/lib/xp/content';
 import { run } from '/lib/xp/context';
 import {
@@ -26,7 +32,7 @@ import { executeFunction } from '/lib/xp/task';
 const PROJECT_ID = app.name.replace('com.enonic.app.', '').replace(/\./g, '-');
 const REPO_ID = `com.enonic.cms.${PROJECT_ID}`;
 const BRANCH_ID = 'draft';
-
+const APP_KEY_VIRTUAL = `${app.name}.virtual`;
 
 const gqlSchema = createGqlSchema();
 
@@ -40,8 +46,26 @@ function task() {
 			'role:system.admin',
 		]
 	}, () => {
+		const vApp = createVirtualApplication({
+			key: APP_KEY_VIRTUAL
+		});
+		log.info('vApp:%s', toStr(vApp));
+
+		const applicationMode = getApplicationMode({
+			key: APP_KEY_VIRTUAL
+		});
+		log.info('applicationMode:%s', applicationMode); // bundled
+
+		const appInfo = getApp({
+			key: APP_KEY_VIRTUAL
+		});
+		log.info('appInfo:%s', toStr(appInfo)); // Doesn't contain applicationMode
+
+		// const apps = listApps();
+		// log.info('apps:%s', toStr(apps)); // long list
+
 		const createdSchema = createSchema({
-			name: `${app.name}:test`,
+			name: `${APP_KEY_VIRTUAL}:test`,
 			type: 'CONTENT_TYPE',
 			resource: `<content-type>
 	<description>Test description</description>

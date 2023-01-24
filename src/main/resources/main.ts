@@ -1062,6 +1062,52 @@ function task() {
 		} catch (e) {
 			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 		} // try/catch
+
+		try {
+			const query = `{
+	guillotine {
+		queryLike: queryDsl(
+			query: {
+				like: {
+					field: "data.timewithouttimezone",
+					value: "*:3?:*"
+				}
+			}
+		) {
+			_path
+			dataAsJson
+		}
+	}
+}`;
+			const expected = {
+				data:{
+					guillotine: {
+						queryLike: [{
+							_path: '/folder',
+							dataAsJson: {
+								location: '59.91273,10.74609',
+								price: 1,
+								timewithouttimezone: aLocalTime
+							}
+						}],
+					} // guillotine
+				} // data
+			};
+			const actual = execute(gqlSchema, query, variables, context);
+			const boolEqual = fde(
+				JSON.parse(JSON.stringify(expected)),
+				JSON.parse(JSON.stringify(actual)),
+			);
+			log.info('like query:%s', boolEqual);
+			if (!boolEqual) {
+				log.info('query:%s', query);
+				log.info('actual:%s', toStr(actual));
+				// log.info('diff:%s', toStr(detailedDiff(expected, actual)));
+				log.info('diff:%s', toStr(Diff.diffJson(expected, actual)));
+			}
+		} catch (e) {
+			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+		} // try/catch
 	}); // run
 } // task
 

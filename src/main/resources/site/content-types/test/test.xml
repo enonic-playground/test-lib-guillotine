@@ -15,5 +15,19 @@
 			<label>Price</label>
 			<occurrences minimum="1" maximum="1"/>
 		</input>
+		<input name="timeWithoutTimeZone" type="time">
+			<config>
+				<timezone>false</timezone><!-- Default is false -->
+			</config>
+			<label>Time without timezone</label>
+			<occurrences minimum="1" maximum="1"/>
+		</input>
+		<input name="timeWithTimeZone" type="time">
+			<config>
+				<timezone>true</timezone><!-- Default is false -->
+			</config>
+			<label>Time with timezone</label>
+			<occurrences minimum="1" maximum="1"/>
+		</input>
 	</form>
 </content-type>

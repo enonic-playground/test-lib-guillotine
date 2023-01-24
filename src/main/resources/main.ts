@@ -27,6 +27,7 @@ import {
 // 	listSchemas,
 // } from '/lib/xp/schema';
 import { executeFunction } from '/lib/xp/task';
+import { localTime } from '/lib/xp/value';
 
 // const { diff: detailedDiff } = new HumanDiff({
 // 	objectName: 'graph'
@@ -146,13 +147,17 @@ function task() {
 		principals: ['role:system.admin']
 	}, () => {
 		let folderContent: FolderContent;
+		const date = new Date();
 		try {
 			folderContent = createContent({
 				//childOrder: '',
 				contentType: CONTENT_TYPE,
 				data: {
 					location: '59.91273, 10.74609', // Oslo
-					price: 1
+					price: 1,
+					// timeWithoutTimeZone: date, // e.class.name:"com.enonic.xp.data.ValueTypeException" e.message:"Value of type [java.lang.Long] cannot be converted to [LocalTime]"
+					timeWithoutTimeZone: localTime(date),
+					timeWithTimeZone: localTime(date)
 				},
 				displayName: 'My Folder',
 				name: 'folder',
@@ -173,13 +178,16 @@ function task() {
 			}
 		} // try/catch
 
+		const anotherDate = new Date();
 		let subFolderContent: FolderContent;
 		try {
 			subFolderContent = createContent({
 				contentType: CONTENT_TYPE,
 				data: {
 					location: '60.39299, 5.32415', // Bergen
-					price: -0.1
+					price: -0.1,
+					timeWithoutTimeZone: localTime(anotherDate),
+					timeWithTimeZone: localTime(anotherDate)
 				},
 				displayName: 'My Sub Folder',
 				name: 'subFolder',

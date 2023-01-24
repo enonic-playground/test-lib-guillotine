@@ -968,21 +968,61 @@ function task() {
 				_path
 				createdTime
 			}
-			#queryTermLocalTime: queryDsl(
-			#	query: {
-			#		term: {
-			#			field: "createdTime"
-			#			value: {
-			#				localTime: "08:35:20"
-			#			}
-			#		}
-			#	}
-			#) {
-			#	_path
-			#	createdTime
-			#}
+			queryTermLocalTimeMicroSecond: queryDsl(
+				query: {
+					term: {
+					field: "createdTime"
+					value: {
+						localTime: "09:05:36.373451"
+					}
+					}
+				}
+				) {
+				_path
+				createdTime
+				}
+				queryTermLocalTimeMilliSecond: queryDsl(
+				query: {
+					term: {
+					field: "createdTime"
+					value: {
+						localTime: "09:05:36.373"
+					}
+					}
+				}
+				) {
+				_path
+				createdTime
+				}
+				queryTermLocalTimeSecond: queryDsl(
+				query: {
+					term: {
+					field: "createdTime"
+					value: {
+						localTime: "09:05:36"
+					}
+					}
+				}
+				) {
+				_path
+				createdTime
+				}
+				queryTermLocalTimeMinute: queryDsl(
+				query: {
+					term: {
+					field: "createdTime"
+					value: {
+						localTime: "09:05"
+					}
+					}
+				}
+				) {
+				_path
+				createdTime
+				}
 	}
 }`;
+			const createdTime = `${folderContent.createdTime.substring(0, folderContent.createdTime.length - 4)}Z`;
 			const expected = {
 				data:{
 					guillotine: {
@@ -1013,13 +1053,28 @@ function task() {
 						}],
 						queryTermLocalInstant: [{
 							_path: '/folder',
-							createdTime: `${folderContent.createdTime.substring(0, folderContent.createdTime.length - 4)}Z`
+							createdTime
 						}],
 						queryTermLocalDateTime: [{
 							_path: '/folder',
-							createdTime: `${folderContent.createdTime.substring(0, folderContent.createdTime.length - 4)}Z`
+							createdTime
 						}],
-						//queryTermLocalTime: []
+						queryTermLocalTimeMicroSecond: [/*{ // TODO
+							_path: '/folder',
+							createdTime
+						}*/],
+						queryTermLocalTimeMilliSecond: [/*{
+							_path: '/folder',
+							createdTime
+						}*/],
+						queryTermLocalTimeSecond: [/*{
+							_path: '/folder',
+							createdTime
+						}*/],
+						queryTermLocalTimeMinute: [/*{
+							_path: '/folder',
+							createdTime
+						}*/],
 					} // guillotine
 				} // data
 			};

@@ -1,3 +1,6 @@
+import type { Content } from '/lib/xp/content';
+
+
 import { toStr } from '@enonic/js-utils';
 // import {detailedDiff} from 'deep-object-diff';
 import fde from 'fast-deep-equal';
@@ -36,6 +39,10 @@ const BRANCH_ID = 'draft';
 const APP_KEY = app.name;
 const CONTENT_TYPE = `${APP_KEY}:test` as const;
 
+type FolderContent = Content<{
+	location: string//|Date
+	price: number
+}, typeof CONTENT_TYPE>
 
 const gqlSchema = createGqlSchema();
 
@@ -138,9 +145,9 @@ function task() {
 		branch: BRANCH_ID,
 		principals: ['role:system.admin']
 	}, () => {
-		let folderId: string;
+		let folderContent: FolderContent;
 		try {
-			folderId = createContent({
+			folderContent = createContent({
 				//childOrder: '',
 				contentType: CONTENT_TYPE,
 				data: {
@@ -159,16 +166,16 @@ function task() {
 				// 		xPropertyName: 'xPropertyValue'
 				// 	}
 				// }
-			})._id;
+			});
 		} catch (e) {
 			if (e.class.name !== 'com.enonic.xp.content.ContentAlreadyExistsException') {
 				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 			}
 		} // try/catch
 
-		let subFolderId: string;
+		let subFolderContent: FolderContent;
 		try {
-			subFolderId = createContent({
+			subFolderContent = createContent({
 				contentType: CONTENT_TYPE,
 				data: {
 					location: '60.39299, 5.32415', // Bergen
@@ -178,7 +185,7 @@ function task() {
 				name: 'subFolder',
 				language: 'no',
 				parentPath: '/folder',
-			})._id;
+			});
 		} catch (e) {
 			if (e.class.name !== 'com.enonic.xp.content.ContentAlreadyExistsException') {
 				log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
@@ -383,7 +390,7 @@ function task() {
 						}],
 						highlightStemmed: {
 							highlightAsJson: {
-								[folderId]: {
+								[folderContent._id]: {
 									_alltext: [
 										'<em>folder</em>',
 										'My <em>Folder</em>'
@@ -399,7 +406,7 @@ function task() {
 										'My <em>Folder</em>'
 									]
 								},
-								[subFolderId]: {
+								[subFolderContent._id]: {
 									_alltext: [
 										'My Sub <em>Folder</em>'
 									],
@@ -516,7 +523,7 @@ function task() {
 					guillotine: {
 						highlightStemmedOpposite: {
 							highlightAsJson: {
-								[folderId]: {
+								[folderContent._id]: {
 									_alltext: [
 										'<b>folder</b>'
 									],
@@ -533,7 +540,7 @@ function task() {
 										' <b>Folder</b>'
 									]
 								},
-								[subFolderId]: {
+								[subFolderContent._id]: {
 									_alltext: [
 										' <b>Folder</b>'
 									],
@@ -879,6 +886,158 @@ function task() {
 			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
 		} // try/catch
 
+		try {
+			const query = `{
+	guillotine {
+		queryTermString: queryDsl(
+			query: {
+				term: {
+					field: "_name"
+					boost: 1.1
+					value: {
+						string: "folder"
+					}
+				}
+			}
+			) {
+				_name
+				_path
+			}
+			queryTermLong: queryDsl(
+				query: {
+					term: {
+						field: "data.price"
+						value: {
+							long: 1
+						}
+					}
+				}
+			) {
+				_path
+				dataAsJson
+			}
+			queryTermDouble: queryDsl(
+				query: {
+					term: {
+					field: "data.price"
+						value: {
+							double: -0.1
+						}
+					}
+				}
+			) {
+				_path
+				dataAsJson
+			}
+			queryTermBoolean: queryDsl(
+				query: {
+					term: {
+						field: "valid"
+						value: {
+							boolean: true
+						}
+					}
+				}
+			) {
+				_path
+				valid
+			}
+			queryTermLocalInstant: queryDsl(
+				query: {
+					term: {
+						field: "createdTime"
+						value: {
+							instant: "${folderContent.createdTime}"
+						}
+					}
+				}
+			) {
+				_path
+				createdTime
+			}
+			queryTermLocalDateTime: queryDsl(
+				query: {
+					term: {
+						field: "createdTime"
+						value: {
+							localDateTime: "${folderContent.createdTime.substring(0, folderContent.createdTime.length - 1)}"
+						}
+					}
+				}
+			) {
+				_path
+				createdTime
+			}
+			#queryTermLocalTime: queryDsl(
+			#	query: {
+			#		term: {
+			#			field: "createdTime"
+			#			value: {
+			#				localTime: "08:35:20"
+			#			}
+			#		}
+			#	}
+			#) {
+			#	_path
+			#	createdTime
+			#}
+	}
+}`;
+			const expected = {
+				data:{
+					guillotine: {
+						queryTermString: [{
+							_name: 'folder',
+							_path: '/folder'
+						}],
+						queryTermLong: [{
+							_path: '/folder',
+							dataAsJson: {
+								location: '59.91273,10.74609',
+								price: 1
+							}
+						}],
+						queryTermDouble: [{
+							_path: '/folder/subFolder',
+							dataAsJson: {
+								location: '60.39299,5.32415',
+								price: -0.1
+							}
+						}],
+						queryTermBoolean: [{
+							_path: '/folder',
+							valid: true
+						},{
+							_path: '/folder/subFolder',
+							valid: true
+						}],
+						queryTermLocalInstant: [{
+							_path: '/folder',
+							createdTime: `${folderContent.createdTime.substring(0, folderContent.createdTime.length - 4)}Z`
+						}],
+						queryTermLocalDateTime: [{
+							_path: '/folder',
+							createdTime: `${folderContent.createdTime.substring(0, folderContent.createdTime.length - 4)}Z`
+						}],
+						//queryTermLocalTime: []
+					} // guillotine
+				} // data
+			};
+			const actual = execute(gqlSchema, query, variables, context);
+			const boolEqual = fde(
+				JSON.parse(JSON.stringify(expected)),
+				JSON.parse(JSON.stringify(actual)),
+			);
+			log.info('term query:%s', boolEqual);
+			if (!boolEqual) {
+				log.info('query:%s', query);
+				log.info('actual:%s', toStr(actual));
+				// log.info('diff:%s', toStr(detailedDiff(expected, actual)));
+				log.info('diff:%s', toStr(Diff.diffJson(expected, actual)));
+			}
+		} catch (e) {
+			log.error(`e.class.name:${toStr(e.class.name)} e.message:${toStr(e.message)}`, e);
+		} // try/catch
 	}); // run
 } // task
 

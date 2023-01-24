@@ -27,7 +27,7 @@ import {
 // 	listSchemas,
 // } from '/lib/xp/schema';
 import { executeFunction } from '/lib/xp/task';
-import { localTime } from '/lib/xp/value';
+// import { localTime } from '/lib/xp/value';
 
 // const { diff: detailedDiff } = new HumanDiff({
 // 	objectName: 'graph'
@@ -147,7 +147,8 @@ function task() {
 		principals: ['role:system.admin']
 	}, () => {
 		let folderContent: FolderContent;
-		const date = new Date();
+		// const date = new Date();
+		const aLocalTime = '12:34:56';
 		try {
 			folderContent = createContent({
 				//childOrder: '',
@@ -155,9 +156,11 @@ function task() {
 				data: {
 					location: '59.91273, 10.74609', // Oslo
 					price: 1,
-					// timeWithoutTimeZone: date, // e.class.name:"com.enonic.xp.data.ValueTypeException" e.message:"Value of type [java.lang.Long] cannot be converted to [LocalTime]"
-					timeWithoutTimeZone: localTime(date),
-					timeWithTimeZone: localTime(date)
+					// timewithouttimezone: date, // e.class.name:"com.enonic.xp.data.ValueTypeException" e.message:"Value of type [java.lang.Long] cannot be converted to [LocalTime]"
+					// timewithouttimezone: localTime(date), // java.lang.IllegalArgumentException: Java 8 date/time type `java.time.LocalTime` not supported by default: add Module “com.fasterxml.jackson.datatype:jackson-datatype-jsr310” to enable handling (through reference chain: java.util.LinkedHashMap[“timewithouttimezone”])
+					timewithouttimezone: aLocalTime,
+					// timeWithTimeZone: `${aLocalTime}Z` // com.enonic.xp.data.ValueTypeException: Value of type [java.lang.String] cannot be converted to [LocalTime]: Text '12:34:56Z' could not be parsed, unparsed text found at index 8
+					//timeWithTimeZone: `${aLocalTime}+01:00` // e.message:"Value of type [java.lang.String] cannot be converted to [LocalTime]: Text '12:34:56+01:00' could not be parsed, unparsed text found at index 8"
 				},
 				displayName: 'My Folder',
 				name: 'folder',
@@ -178,7 +181,8 @@ function task() {
 			}
 		} // try/catch
 
-		const anotherDate = new Date();
+		// const anotherDate = new Date();
+		const anotherLocalTime = '23:59:59';
 		let subFolderContent: FolderContent;
 		try {
 			subFolderContent = createContent({
@@ -186,8 +190,8 @@ function task() {
 				data: {
 					location: '60.39299, 5.32415', // Bergen
 					price: -0.1,
-					timeWithoutTimeZone: localTime(anotherDate),
-					timeWithTimeZone: localTime(anotherDate)
+					timewithouttimezone: anotherLocalTime,
+					// timeWithTimeZone: `${anotherLocalTime}+01:00`
 				},
 				displayName: 'My Sub Folder',
 				name: 'subFolder',
@@ -742,7 +746,8 @@ function task() {
 									_path: '/folder',
 									dataAsJson: {
 										location: '59.91273,10.74609',
-										price: 1
+										price: 1,
+										timewithouttimezone: aLocalTime
 									},
 									type: 'com.enonic.app.test.lib.guillotine:test'
 								}
@@ -751,7 +756,8 @@ function task() {
 									_path: '/folder/subFolder',
 									dataAsJson: {
 										location: '60.39299,5.32415',
-										price: -0.1
+										price: -0.1,
+										timewithouttimezone: anotherLocalTime
 									},
 									type: 'com.enonic.app.test.lib.guillotine:test'
 								}
@@ -867,13 +873,15 @@ function task() {
 							_path: '/folder',
 							dataAsJson: {
 								location: '59.91273,10.74609',
-								price: 1
+								price: 1,
+								timewithouttimezone: aLocalTime
 							}
 						},{
 							_path: '/folder/subFolder',
 							dataAsJson: {
 								location: '60.39299,5.32415',
-								price: -0.1
+								price: -0.1,
+								timewithouttimezone: anotherLocalTime
 							}
 						}],
 					} // guillotine
@@ -907,127 +915,86 @@ function task() {
 					}
 				}
 			}
-			) {
-				_name
-				_path
-			}
-			queryTermLong: queryDsl(
-				query: {
-					term: {
-						field: "data.price"
-						value: {
-							long: 1
-						}
-					}
-				}
-			) {
-				_path
-				dataAsJson
-			}
-			queryTermDouble: queryDsl(
-				query: {
-					term: {
+		) {
+			_name
+			_path
+		}
+		queryTermLong: queryDsl(
+			query: {
+				term: {
 					field: "data.price"
-						value: {
-							double: -0.1
-						}
+					value: {
+						long: 1
 					}
 				}
-			) {
-				_path
-				dataAsJson
 			}
-			queryTermBoolean: queryDsl(
-				query: {
-					term: {
-						field: "valid"
-						value: {
-							boolean: true
-						}
+		) {
+			_path
+			dataAsJson
+		}
+		queryTermDouble: queryDsl(
+			query: {
+				term: {
+				field: "data.price"
+					value: {
+						double: -0.1
 					}
 				}
-			) {
-				_path
-				valid
 			}
-			queryTermLocalInstant: queryDsl(
-				query: {
-					term: {
-						field: "createdTime"
-						value: {
-							instant: "${folderContent.createdTime}"
-						}
+		) {
+			_path
+			dataAsJson
+		}
+		queryTermBoolean: queryDsl(
+			query: {
+				term: {
+					field: "valid"
+					value: {
+						boolean: true
 					}
 				}
-			) {
-				_path
-				createdTime
 			}
-			queryTermLocalDateTime: queryDsl(
-				query: {
-					term: {
-						field: "createdTime"
-						value: {
-							localDateTime: "${folderContent.createdTime.substring(0, folderContent.createdTime.length - 1)}"
-						}
-					}
-				}
-			) {
-				_path
-				createdTime
-			}
-			queryTermLocalTimeMicroSecond: queryDsl(
-				query: {
-					term: {
+		) {
+			_path
+			valid
+		}
+		queryTermLocalInstant: queryDsl(
+			query: {
+				term: {
 					field: "createdTime"
 					value: {
-						localTime: "09:05:36.373451"
-					}
+						instant: "${folderContent.createdTime}"
 					}
 				}
-				) {
-				_path
-				createdTime
-				}
-				queryTermLocalTimeMilliSecond: queryDsl(
-				query: {
-					term: {
+			}
+		) {
+			_path
+			createdTime
+		}
+		queryTermLocalDateTime: queryDsl(
+			query: {
+				term: {
 					field: "createdTime"
 					value: {
-						localTime: "09:05:36.373"
-					}
-					}
-				}
-				) {
-				_path
-				createdTime
-				}
-				queryTermLocalTimeSecond: queryDsl(
-				query: {
-					term: {
-					field: "createdTime"
-					value: {
-						localTime: "09:05:36"
-					}
+						localDateTime: "${folderContent.createdTime.substring(0, folderContent.createdTime.length - 1)}"
 					}
 				}
-				) {
-				_path
-				createdTime
+			}
+		) {
+			_path
+			createdTime
+		}
+		queryTermLocalTimeSecond: queryDsl(
+			query: {
+				term: {
+					field: "data.timewithouttimezone",
+					value: {localTime: "12:34:56"}
 				}
-				queryTermLocalTimeMinute: queryDsl(
-				query: {
-					term: {
-					field: "createdTime"
-					value: {
-						localTime: "09:05"
-					}
-					}
-				}
-				) {
-				_path
-				createdTime
-				}
+			}
+		) {
+			_path
+			dataAsJson
+		}
 	}
 }`;
 			const createdTime = `${folderContent.createdTime.substring(0, folderContent.createdTime.length - 4)}Z`;
@@ -1042,14 +1009,16 @@ function task() {
 							_path: '/folder',
 							dataAsJson: {
 								location: '59.91273,10.74609',
-								price: 1
+								price: 1,
+								timewithouttimezone: aLocalTime
 							}
 						}],
 						queryTermDouble: [{
 							_path: '/folder/subFolder',
 							dataAsJson: {
 								location: '60.39299,5.32415',
-								price: -0.1
+								price: -0.1,
+								timewithouttimezone: anotherLocalTime
 							}
 						}],
 						queryTermBoolean: [{
@@ -1067,22 +1036,14 @@ function task() {
 							_path: '/folder',
 							createdTime
 						}],
-						queryTermLocalTimeMicroSecond: [/*{ // TODO
+						queryTermLocalTimeSecond: [{
 							_path: '/folder',
-							createdTime
-						}*/],
-						queryTermLocalTimeMilliSecond: [/*{
-							_path: '/folder',
-							createdTime
-						}*/],
-						queryTermLocalTimeSecond: [/*{
-							_path: '/folder',
-							createdTime
-						}*/],
-						queryTermLocalTimeMinute: [/*{
-							_path: '/folder',
-							createdTime
-						}*/],
+							dataAsJson: {
+								location: '59.91273,10.74609',
+								price: 1,
+								timewithouttimezone: aLocalTime
+							}
+						}]
 					} // guillotine
 				} // data
 			};

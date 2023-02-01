@@ -27,7 +27,7 @@
 		"outDir": "build/tsc", // So it doesn't complain about overwriting files under ./src
 		"paths": {
 			"/lib/xp/*": ["node_modules/@enonic-types/lib-*"],
-			"/lib/*": ["src/main/resources/lib/*"], // So one can import local libs with absolute path (same as Enonic does during runtime).
+			"/*": ["src/main/resources/*"], // So one can import local libs with absolute path (same as Enonic does during runtime).
 		},
 		"sourceMap": true,
 		"strictNullChecks": true,

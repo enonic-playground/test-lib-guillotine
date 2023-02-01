@@ -24,7 +24,7 @@ const config = {
   context: path.join(__dirname, RESOURCES_PATH),
   entry: {},
   externals: [
-    /^\/lib\/(.+|\$)$/i
+	/^\//i
   ],
   output: {
     path: path.join(__dirname, '/build/resources/main'),
